@@ -1,0 +1,72 @@
+name: Spring Build & Run
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '17'
+      
+      - name: Cache Gradle packages
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle
+
+      - name: Change to backend directory
+        run: cd backend
+      
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+        working-directory: backend
+
+      - name: Build with Gradle
+        run: ./gradlew clean build
+        working-directory: backend
+      
+      - name: Install SSH client
+        run: sudo apt-get install -y openssh-client
+      
+      - name: Copy build files to EC2
+        run: |
+          echo "$AWS_SSH_PRIVATE_KEY" > private_key.pem
+          chmod 600 private_key.pem
+          TARGET_FILE_NAME="app.jar"
+          scp -i private_key.pem -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r ./backend/build/libs/*.jar ${{ secrets.USER }}@${{ secrets.HOST }}:/home/deploy/$TARGET_FILE_NAME
+        env:
+          AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
+
+      - name: Stop and run the new build on EC2
+        run: |
+          echo "$AWS_SSH_PRIVATE_KEY" > private_key.pem
+          chmod 600 private_key.pem
+          ssh -i private_key.pem -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.USER }}@${{ secrets.HOST }} <<'EOF'
+            # "java -jar app.jar" 패턴이 포함된 명령어로 실행된 프로세스를 찾아서 SPRING_PID에 저장.
+            SPRING_PID=$(pgrep -f "java -jar app.jar")
+            if [ -n "$SPRING_PID" ]; then
+              kill $SPRING_PID
+            fi
+            
+            # Run the new build
+            cd /home/deploy/
+            nohup java -jar ./app.jar > app.log 2>&1 &
+          EOF
+        env:
+          AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
