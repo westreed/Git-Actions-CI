@@ -5,7 +5,7 @@ FROM openjdk:11-jdk
 WORKDIR /app
 
 # 프로젝트 파일 복사
-COPY ./backend .
+COPY /backend .
 
 # Gradle 실행권한 부여
 RUN chmod +x ./gradlew
