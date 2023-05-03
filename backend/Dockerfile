@@ -1,11 +1,13 @@
 # 사용할 기본 이미지 지정
-FROM openjdk:17-jdk
+FROM ubuntu:20.04
 
 # 작업 디렉토리 설정
 WORKDIR /app
 
-# xargs 설치 -> gradlew 빌드시 xargs가 요구됨
-RUN /usr/bin/apt-get update && /usr/bin/apt-get install -y --no-install-recommends findutils && rm -rf /var/lib/apt/lists/*
+# Java 17 설치
+RUN apt-get update && \
+    apt-get install -y openjdk-17-jdk && \
+    apt-get clean
 
 # 프로젝트 파일 복사
 COPY . .
