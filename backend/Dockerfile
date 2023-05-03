@@ -4,6 +4,9 @@ FROM openjdk:17-jdk
 # 작업 디렉토리 설정
 WORKDIR /app
 
+# xargs 설치 -> gradlew 빌드시 xargs가 요구됨
+RUN apt-get update && apt-get install -y xargs
+
 # 프로젝트 파일 복사
 COPY . .
 
