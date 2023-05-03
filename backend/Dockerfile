@@ -5,7 +5,7 @@ FROM openjdk:17-jdk
 WORKDIR /app
 
 # xargs 설치 -> gradlew 빌드시 xargs가 요구됨
-RUN apk update && apk add --no-cache findutils
+RUN /usr/bin/apt-get update && /usr/bin/apt-get install -y --no-install-recommends findutils && rm -rf /var/lib/apt/lists/*
 
 # 프로젝트 파일 복사
 COPY . .
