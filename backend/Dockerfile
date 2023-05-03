@@ -7,6 +7,9 @@ WORKDIR /app
 # 프로젝트 파일 복사
 COPY . .
 
+# Gradle 실행권한 부여
+RUN chmod +x ./gradlew
+
 # Gradle 빌드
 RUN ./gradlew build
 
